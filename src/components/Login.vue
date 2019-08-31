@@ -51,29 +51,30 @@ export default {
   },
   methods: {
     login() {
-      this.$refs.form.validate(valid => {
+      this.$refs.form.validate(async valid => {
         if (valid) {
-          this.axios({
+          let ret = await this.axios({
             method: 'post',
             url: 'http://localhost:8888/api/private/v1/login',
             data: this.form
-          }).then(res => {
-            if (res.data.meta.status === 200) {
-              // this.$message.success('恭喜你，登陆成功') 同下面写法
-              this.$message({
-                message: '恭喜你，登陆成功',
-                type: 'success',
-                duration: 1000
-              })
-              // 保存服务器传过来的token信息,要放到编程式导航前面，这样导航守卫才能判断时token才存在
-              window.localStorage.setItem('token', res.data.data.token)
-              this.$router.push('/home')
-              // console.log(res.data.data.token)
-            } else {
-              this.$message.error('用户名或密码错误')
-            }
           })
+
+          if (ret.data.meta.status === 200) {
+            // this.$message.success('恭喜你，登陆成功') 同下面写法
+            this.$message({
+              message: '恭喜你，登陆成功',
+              type: 'success',
+              duration: 1000
+            })
+            // 保存服务器传过来的token信息,要放到编程式导航前面，这样导航守卫才能判断时token才存在
+            window.localStorage.setItem('token', ret.data.data.token)
+            this.$router.push('/home')
+            // console.log(res.data.data.token)
+          } else {
+            this.$message.error('用户名或密码错误')
+          }
         } else {
+          alert('submit error')
           return false
         }
       })

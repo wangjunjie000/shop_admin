@@ -14,39 +14,32 @@
     <el-container>
       <!-- 侧边栏 -->
       <el-aside width="200px">
+        <!-- default-active="1"显示高亮，对应着index属性，index属性又对应着url地址中的hash，所以要动态获取hash -->
         <el-menu
-          default-active="1"
+          :default-active="$route.path.substr(1).split('-')[0]"
           class="el-menu-vertical-demo"
-          @open="handleOpen"
-          @close="handleClose"
           background-color="#545c64"
           text-color="#fff"
           active-text-color="#ffd04b"
           :unique-opened="true"
           router
         >
-          <el-submenu index="1">
+          <el-submenu
+            :key="submenu.id"
+            :index="submenu.path"
+            v-for="submenu in menuList"
+          >
             <template slot="title">
               <i class="el-icon-location"></i>
-              <span>用户管理</span>
+              <span>{{ submenu.authName }}</span>
             </template>
-            <el-menu-item index="/users">
+            <el-menu-item
+              :key="item.id"
+              :index="item.path"
+              v-for="item in submenu.children"
+            >
               <i class="el-icon-menu"></i>
-              <span slot="title">用户列表</span>
-            </el-menu-item>
-          </el-submenu>
-          <el-submenu index="2">
-            <template slot="title">
-              <i class="el-icon-location"></i>
-              <span>权限管理</span>
-            </template>
-            <el-menu-item index="2-1">
-              <i class="el-icon-menu"></i>
-              <span slot="title">角色列表</span>
-            </el-menu-item>
-            <el-menu-item index="2-2">
-              <i class="el-icon-menu"></i>
-              <span slot="title">权限列表</span>
+              <span slot="title">{{ item.authName }}</span>
             </el-menu-item>
           </el-submenu>
         </el-menu>
@@ -64,37 +57,44 @@ export default {
   name: 'Home',
 
   data() {
-    return {}
+    return {
+      // 根据用户的角色、权限对应的菜单列表，用户菜单根据它来动态渲染
+      menuList: []
+    }
   },
   methods: {
-    handleLogoutClick() {
-      this.$confirm('您确定要退出吗', '温馨提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      })
-        .then(() => {
-          // 清除localStorage中的token登陆状态,其实是有bug的，可以自己添加token，
-          window.localStorage.removeItem('token')
-          // 跳转到登录页
-          this.$router.push('/login')
-          this.$message({
-            type: 'success',
-            message: '退出成功!'
-          })
+    // 点击退出清空token，跳转到登录页
+    async handleLogoutClick() {
+      try {
+        await this.$confirm('您确定要退出吗', '温馨提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
         })
-        .catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消'
-          })
+        // 清除localStorage中的token登陆状态,其实是有bug的，可以自己添加token，
+        window.localStorage.removeItem('token')
+        // 跳转到登录页
+        this.$router.push('/login')
+        this.$message({
+          type: 'success',
+          message: '退出成功!'
         })
-    },
-    handleOpen(key, keyPath) {
-      console.log(key, keyPath)
-    },
-    handleClose(key, keyPath) {
-      console.log(key, keyPath)
+      } catch (e) {
+        this.$message.error('取消退出')
+      }
+    }
+  },
+  // 在created钩子函数中获取到左侧菜单数据，然后动态渲染到页面，服务器会根据不同的用户的角色返回不同权限的菜单数据，因此角色不一样的登陆用户左侧的菜单也是不同的
+  async created() {
+    // 获取菜单的列表
+    let res = await this.axios.get('menus')
+    let {
+      meta: { status },
+      data
+    } = res.data
+    if (status === 200) {
+      this.menuList = data
+      // console.log(data)
     }
   }
 }
